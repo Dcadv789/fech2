@@ -8,13 +8,15 @@ interface ServiceModalProps {
   onClose: () => void;
   onSave: () => void;
   service?: Service | null;
+  selectedCompanyId: string;
 }
 
 const ServiceModal: React.FC<ServiceModalProps> = ({ 
   isOpen, 
   onClose, 
   onSave,
-  service
+  service,
+  selectedCompanyId
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +51,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
       const formData = new FormData(e.currentTarget);
       
       const serviceData = {
+        empresa_id: selectedCompanyId,
         codigo: serviceCode,
         nome: formData.get('nome') as string,
         descricao: formData.get('descricao') as string || undefined,
@@ -154,4 +157,4 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
   );
 };
 
-export default ServiceModal;
+export default ServiceModal

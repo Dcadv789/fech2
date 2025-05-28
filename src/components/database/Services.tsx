@@ -13,10 +13,16 @@ const Services: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
   useEffect(() => {
-    loadServices();
-  }, []);
+    if (selectedCompanyId) {
+      loadServices();
+    } else {
+      setServices([]);
+      setFilteredServices([]);
+    }
+  }, [selectedCompanyId]);
 
   useEffect(() => {
     filterServices();
@@ -26,7 +32,10 @@ const Services: React.FC = () => {
     try {
       setIsLoading(true);
       const data = await serviceService.getServices();
-      setServices(data);
+      const filteredData = selectedCompanyId 
+        ? data.filter(service => service.empresa_id === selectedCompanyId)
+        : data;
+      setServices(filteredData);
     } catch (error) {
       console.error('Erro ao carregar serviços:', error);
     } finally {
@@ -63,8 +72,7 @@ const Services: React.FC = () => {
   const handleToggleActive = async (service: Service) => {
     try {
       await serviceService.toggleServiceActive(service.id, !service.ativo);
-      const updatedServices = await loadServices();
-      setServices(updatedServices);
+      await loadServices();
     } catch (error) {
       console.error('Erro ao alterar status do serviço:', error);
     }
@@ -75,19 +83,28 @@ const Services: React.FC = () => {
 
     try {
       await serviceService.deleteService(id);
-      const updatedServices = await loadServices();
-      setServices(updatedServices);
+      await loadServices();
     } catch (error) {
       console.error('Erro ao excluir serviço:', error);
     }
   };
 
   const handleSave = async () => {
-    const updatedServices = await loadServices();
-    setServices(updatedServices);
+    await loadServices();
     setIsModalOpen(false);
     setSelectedService(null);
   };
+
+  // Atualizar o selectedCompanyId quando o CompanySelect mudar
+  useEffect(() => {
+    const unsubscribe = window.addEventListener('companySelect', ((event: CustomEvent) => {
+      setSelectedCompanyId(event.detail.companyId);
+    }) as EventListener);
+
+    return () => {
+      window.removeEventListener('companySelect', unsubscribe as EventListener);
+    };
+  }, []);
 
   return (
     <div>
@@ -98,7 +115,12 @@ const Services: React.FC = () => {
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+          disabled={!selectedCompanyId}
+          className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+            selectedCompanyId
+              ? 'bg-primary-600 text-white hover:bg-primary-700'
+              : 'bg-dark-700 text-gray-500 cursor-not-allowed'
+          }`}
         >
           <Plus size={20} />
           Novo Serviço
@@ -176,6 +198,7 @@ const Services: React.FC = () => {
         }}
         onSave={handleSave}
         service={selectedService}
+        selectedCompanyId={selectedCompanyId}
       />
     </div>
   );
