@@ -9,7 +9,11 @@ import BulkLinkModal from './BulkLinkModal';
 import { Category } from '../../types/category';
 import { categoryService } from '../../services/categoryService';
 
-const Categories: React.FC = () => {
+interface CategoriesProps {
+  selectedCompanyId: string;
+}
+
+const Categories: React.FC<CategoriesProps> = ({ selectedCompanyId }) => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'receita' | 'despesa'>('all');
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -24,8 +28,10 @@ const Categories: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadCategories();
-  }, []);
+    if (selectedCompanyId) {
+      loadCategories();
+    }
+  }, [selectedCompanyId]);
 
   useEffect(() => {
     filterCategories();
@@ -136,21 +142,34 @@ const Categories: React.FC = () => {
         <div className="flex gap-3">
           <button 
             onClick={() => setIsCategoryModalOpen(true)}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+            disabled={!selectedCompanyId}
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              selectedCompanyId
+                ? 'bg-primary-600 text-white hover:bg-primary-700'
+                : 'bg-dark-700 text-gray-500 cursor-not-allowed'
+            }`}
           >
             <Plus size={20} />
             Nova Categoria
           </button>
           <button 
             onClick={() => setIsGroupModalOpen(true)}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+            disabled={!selectedCompanyId}
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              selectedCompanyId
+                ? 'bg-primary-600 text-white hover:bg-primary-700'
+                : 'bg-dark-700 text-gray-500 cursor-not-allowed'
+            }`}
           >
             <Plus size={20} />
             Novo Grupo
           </button>
           <button 
             onClick={() => setIsBulkLinkModalOpen(true)}
-            className="px-4 py-2 bg-dark-700 text-gray-300 rounded-lg hover:bg-dark-600 hover:text-white transition-colors"
+            disabled={!selectedCompanyId}
+            className={`px-4 py-2 bg-dark-700 text-gray-300 rounded-lg hover:bg-dark-600 hover:text-white transition-colors ${
+              !selectedCompanyId && 'opacity-50 cursor-not-allowed'
+            }`}
           >
             Vincular em Massa
           </button>
@@ -295,3 +314,5 @@ const Categories: React.FC = () => {
 };
 
 export default Categories;
+
+export default Categories

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import Categories from '../components/database/Categories';
 import Indicators from '../components/database/Indicators';
@@ -9,11 +9,27 @@ import Services from '../components/database/Services';
 import CompanySelect from '../components/database/CompanySelect';
 
 const DatabasePage: React.FC = () => {
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+
+  // Atualizar o selectedCompanyId quando o CompanySelect mudar
+  useEffect(() => {
+    const unsubscribe = window.addEventListener('companySelect', ((event: CustomEvent) => {
+      setSelectedCompanyId(event.detail.companyId);
+    }) as EventListener);
+
+    return () => {
+      window.removeEventListener('companySelect', unsubscribe as EventListener);
+    };
+  }, []);
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-white">Banco de Dados</h1>
-        <CompanySelect />
+        <CompanySelect 
+          value={selectedCompanyId}
+          onChange={setSelectedCompanyId}
+        />
       </div>
 
       <Tabs defaultValue="categorias" className="w-full">
@@ -27,22 +43,22 @@ const DatabasePage: React.FC = () => {
         </TabsList>
 
         <TabsContent value="categorias">
-          <Categories />
+          <Categories selectedCompanyId={selectedCompanyId} />
         </TabsContent>
         <TabsContent value="indicadores">
-          <Indicators />
+          <Indicators selectedCompanyId={selectedCompanyId} />
         </TabsContent>
         <TabsContent value="lancamentos">
-          <Transactions />
+          <Transactions selectedCompanyId={selectedCompanyId} />
         </TabsContent>
         <TabsContent value="lancamentos-clientes">
-          <CustomerTransactions />
+          <CustomerTransactions selectedCompanyId={selectedCompanyId} />
         </TabsContent>
         <TabsContent value="registro-vendas">
-          <SalesRegistration />
+          <SalesRegistration selectedCompanyId={selectedCompanyId} />
         </TabsContent>
         <TabsContent value="servicos">
-          <Services />
+          <Services selectedCompanyId={selectedCompanyId} />
         </TabsContent>
       </Tabs>
     </div>
