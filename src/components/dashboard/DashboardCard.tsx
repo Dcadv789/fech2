@@ -18,20 +18,22 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   loading = false 
 }) => {
   return (
-    <div className="bg-dark-800/50 backdrop-blur-sm rounded-xl border border-dark-700 p-6">
+    <div className="bg-dark-800/50 backdrop-blur-sm rounded-xl border border-dark-700 p-6 hover:bg-dark-800/70 transition-colors">
       {loading ? (
-        <div className="animate-pulse">
-          <div className="h-4 bg-dark-700 rounded w-1/2 mb-4"></div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 bg-dark-700 rounded w-1/2"></div>
           <div className="h-8 bg-dark-700 rounded w-3/4"></div>
         </div>
       ) : (
         <>
-          <h3 className="text-sm font-medium text-gray-400 mb-2">{title}</h3>
+          <h3 className="text-sm font-medium text-gray-400 mb-3">{title}</h3>
           <div className="flex items-end gap-3">
-            <p className="text-2xl font-semibold text-white">{value}</p>
+            <p className="text-2xl font-bold text-white">{value}</p>
             {comparison && (
-              <div className={`flex items-center text-sm ${
-                comparison.type === 'increase' ? 'text-green-500' : 'text-red-500'
+              <div className={`flex items-center text-sm font-medium ${
+                comparison.type === 'increase' 
+                  ? 'text-green-400' 
+                  : 'text-red-400'
               }`}>
                 {comparison.type === 'increase' ? (
                   <ArrowUp size={16} className="mr-1" />

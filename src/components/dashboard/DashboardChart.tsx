@@ -20,9 +20,10 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
         text: title,
         textStyle: {
           color: '#fff',
-          fontSize: 16,
-          fontWeight: 'normal'
-        }
+          fontSize: 18,
+          fontWeight: 500
+        },
+        padding: [0, 0, 24, 0]
       },
       tooltip: {
         trigger: 'axis',
@@ -48,7 +49,6 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
       }
     };
 
-    // Configurações específicas por tipo de gráfico
     switch (type) {
       case 'bar':
         return {
@@ -78,7 +78,11 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
           series: [{
             data: data.values,
             type: 'bar',
-            color: '#0073f5'
+            itemStyle: {
+              color: function(params: any) {
+                return params.value >= 0 ? '#22c55e' : '#ef4444';
+              }
+            }
           }]
         };
 
@@ -111,7 +115,29 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
             data: data.values,
             type: 'line',
             smooth: true,
-            color: '#0073f5'
+            lineStyle: {
+              color: '#0073f5',
+              width: 3
+            },
+            itemStyle: {
+              color: '#0073f5'
+            },
+            areaStyle: {
+              color: {
+                type: 'linear',
+                x: 0,
+                y: 0,
+                x2: 0,
+                y2: 1,
+                colorStops: [{
+                  offset: 0,
+                  color: 'rgba(0, 115, 245, 0.2)'
+                }, {
+                  offset: 1,
+                  color: 'rgba(0, 115, 245, 0)'
+                }]
+              }
+            }
           }]
         };
 
@@ -120,10 +146,13 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
           ...baseOption,
           series: [{
             type: 'pie',
-            radius: '50%',
+            radius: '60%',
             data: data.map((item: any) => ({
               value: item.value,
-              name: item.name
+              name: item.name,
+              itemStyle: {
+                color: item.value >= 0 ? '#22c55e' : '#ef4444'
+              }
             })),
             emphasis: {
               itemStyle: {
@@ -141,16 +170,16 @@ const DashboardChart: React.FC<DashboardChartProps> = ({
   };
 
   return (
-    <div className="bg-dark-800/50 backdrop-blur-sm rounded-xl border border-dark-700 p-6">
+    <div className="bg-dark-800/50 backdrop-blur-sm rounded-xl border border-dark-700 p-6 h-full hover:bg-dark-800/70 transition-colors">
       {loading ? (
-        <div className="animate-pulse">
-          <div className="h-4 bg-dark-700 rounded w-1/4 mb-8"></div>
-          <div className="h-64 bg-dark-700 rounded"></div>
+        <div className="animate-pulse h-full">
+          <div className="h-6 bg-dark-700 rounded w-1/4 mb-8"></div>
+          <div className="h-[calc(100%-40px)] bg-dark-700 rounded"></div>
         </div>
       ) : (
         <ReactECharts 
           option={getChartOption()} 
-          style={{ height: '400px', width: '100%' }}
+          style={{ height: 'calc(100% - 24px)', width: '100%' }}
           theme="dark"
         />
       )}
