@@ -314,5 +314,3 @@ const Categories: React.FC<CategoriesProps> = ({ selectedCompanyId }) => {
 };
 
 export default Categories;
-
-export default Categories

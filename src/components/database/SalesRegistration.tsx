@@ -4,10 +4,12 @@ import { supabase } from '../../lib/supabase';
 import SalesList from './SalesList';
 import SaleModal from './SaleModal';
 import SaleEditModal from './SaleEditModal';
-import CompanySelect from './CompanySelect';
 
-const SalesRegistration: React.FC = () => {
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+interface SalesRegistrationProps {
+  selectedCompanyId: string;
+}
+
+const SalesRegistration: React.FC<SalesRegistrationProps> = ({ selectedCompanyId }) => {
   const [sales, setSales] = useState<any[]>([]);
   const [filteredSales, setFilteredSales] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,17 +31,6 @@ const SalesRegistration: React.FC = () => {
   useEffect(() => {
     filterSales();
   }, [sales, searchTerm, selectedOrigin]);
-
-  // Atualizar o selectedCompanyId quando o CompanySelect mudar
-  useEffect(() => {
-    const unsubscribe = window.addEventListener('companySelect', ((event: CustomEvent) => {
-      setSelectedCompanyId(event.detail.companyId);
-    }) as EventListener);
-
-    return () => {
-      window.removeEventListener('companySelect', unsubscribe as EventListener);
-    };
-  }, []);
 
   const loadSales = async () => {
     try {

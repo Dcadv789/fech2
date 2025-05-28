@@ -8,7 +8,11 @@ import TransactionList from './TransactionList';
 import TransactionModal from './TransactionModal';
 import TransactionEditModal from './TransactionEditModal';
 
-const Transactions: React.FC = () => {
+interface TransactionsProps {
+  selectedCompanyId: string;
+}
+
+const Transactions: React.FC<TransactionsProps> = ({ selectedCompanyId }) => {
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
   const [selectedType, setSelectedType] = useState<'all' | 'receita' | 'despesa'>('all');
@@ -26,8 +30,10 @@ const Transactions: React.FC = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
-    loadInitialData();
-  }, []);
+    if (selectedCompanyId) {
+      loadInitialData();
+    }
+  }, [selectedCompanyId]);
 
   useEffect(() => {
     filterTransactions();
@@ -63,6 +69,7 @@ const Transactions: React.FC = () => {
         categoria:categorias(nome),
         indicador:indicadores(nome)
       `)
+      .eq('empresa_id', selectedCompanyId)
       .order('ano', { ascending: false })
       .order('mes', { ascending: false });
 
@@ -74,6 +81,7 @@ const Transactions: React.FC = () => {
     const { data, error } = await supabase
       .from('lancamentos')
       .select('ano')
+      .eq('empresa_id', selectedCompanyId)
       .order('ano', { ascending: false });
 
     if (error) throw error;
@@ -106,34 +114,28 @@ const Transactions: React.FC = () => {
   const filterTransactions = () => {
     let filtered = [...transactions];
 
-    // Filtrar por mês
     if (selectedMonth !== 'all') {
       filtered = filtered.filter(transaction => transaction.mes === selectedMonth);
     }
 
-    // Filtrar por ano
     if (selectedYear !== 'all') {
       filtered = filtered.filter(transaction => transaction.ano === selectedYear);
     }
 
-    // Filtrar por tipo
     if (selectedType !== 'all') {
       filtered = filtered.filter(transaction => 
         transaction.tipo.toLowerCase() === selectedType
       );
     }
 
-    // Filtrar por categoria
     if (selectedCategory) {
       filtered = filtered.filter(transaction => transaction.categoria_id === selectedCategory);
     }
 
-    // Filtrar por indicador
     if (selectedIndicator) {
       filtered = filtered.filter(transaction => transaction.indicador_id === selectedIndicator);
     }
 
-    // Filtrar por termo de busca
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(transaction =>
@@ -217,12 +219,19 @@ const Transactions: React.FC = () => {
         <div className="flex gap-3">
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+            disabled={!selectedCompanyId}
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              selectedCompanyId
+                ? 'bg-primary-600 text-white hover:bg-primary-700'
+                : 'bg-dark-700 text-gray-500 cursor-not-allowed'
+            }`}
           >
             <Plus size={20} />
             Novo Lançamento
           </button>
-          <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+          <button 
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+          >
             <Upload size={20} />
             Upload
           </button>
@@ -327,6 +336,7 @@ const Transactions: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveTransaction}
+        selectedCompanyId={selectedCompanyId}
       />
 
       {selectedTransaction && (

@@ -5,7 +5,11 @@ import { serviceService } from '../../services/serviceService';
 import ServiceList from './ServiceList';
 import ServiceModal from './ServiceModal';
 
-const Services: React.FC = () => {
+interface ServicesProps {
+  selectedCompanyId: string;
+}
+
+const Services: React.FC<ServicesProps> = ({ selectedCompanyId }) => {
   const [services, setServices] = useState<Service[]>([]);
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,7 +17,6 @@ const Services: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
   useEffect(() => {
     if (selectedCompanyId) {
@@ -94,17 +97,6 @@ const Services: React.FC = () => {
     setIsModalOpen(false);
     setSelectedService(null);
   };
-
-  // Atualizar o selectedCompanyId quando o CompanySelect mudar
-  useEffect(() => {
-    const unsubscribe = window.addEventListener('companySelect', ((event: CustomEvent) => {
-      setSelectedCompanyId(event.detail.companyId);
-    }) as EventListener);
-
-    return () => {
-      window.removeEventListener('companySelect', unsubscribe as EventListener);
-    };
-  }, []);
 
   return (
     <div>

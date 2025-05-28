@@ -6,7 +6,11 @@ import TransactionList from './TransactionList';
 import TransactionModal from './TransactionModal';
 import TransactionEditModal from './TransactionEditModal';
 
-const CustomerTransactions: React.FC = () => {
+interface CustomerTransactionsProps {
+  selectedCompanyId: string;
+}
+
+const CustomerTransactions: React.FC<CustomerTransactionsProps> = ({ selectedCompanyId }) => {
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
   const [selectedClient, setSelectedClient] = useState<string>('');
@@ -21,8 +25,10 @@ const CustomerTransactions: React.FC = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
-    loadInitialData();
-  }, []);
+    if (selectedCompanyId) {
+      loadInitialData();
+    }
+  }, [selectedCompanyId]);
 
   useEffect(() => {
     filterTransactions();
@@ -55,6 +61,7 @@ const CustomerTransactions: React.FC = () => {
         empresa:empresas(razao_social),
         cliente:clientes(razao_social)
       `)
+      .eq('empresa_id', selectedCompanyId)
       .eq('tipo', 'Receita')
       .not('cliente_id', 'is', null)
       .order('ano', { ascending: false })
@@ -68,6 +75,7 @@ const CustomerTransactions: React.FC = () => {
     const { data, error } = await supabase
       .from('lancamentos')
       .select('ano')
+      .eq('empresa_id', selectedCompanyId)
       .eq('tipo', 'Receita')
       .not('cliente_id', 'is', null)
       .order('ano', { ascending: false });
@@ -81,6 +89,7 @@ const CustomerTransactions: React.FC = () => {
     const { data, error } = await supabase
       .from('clientes')
       .select('*')
+      .eq('empresa_id', selectedCompanyId)
       .eq('ativo', true)
       .order('razao_social');
 
@@ -130,22 +139,19 @@ const CustomerTransactions: React.FC = () => {
         .eq('id', id);
 
       if (error) throw error;
-      const updatedTransactions = await loadTransactions();
-      setTransactions(updatedTransactions);
+      await loadTransactions();
     } catch (error) {
       console.error('Erro ao excluir lançamento:', error);
     }
   };
 
   const handleSaveTransaction = async () => {
-    const updatedTransactions = await loadTransactions();
-    setTransactions(updatedTransactions);
+    await loadTransactions();
     setIsModalOpen(false);
   };
 
   const handleSaveEdit = async () => {
-    const updatedTransactions = await loadTransactions();
-    setTransactions(updatedTransactions);
+    await loadTransactions();
     setIsEditModalOpen(false);
     setSelectedTransaction(null);
   };
@@ -188,12 +194,19 @@ const CustomerTransactions: React.FC = () => {
         <div className="flex gap-3">
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+            disabled={!selectedCompanyId}
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              selectedCompanyId
+                ? 'bg-primary-600 text-white hover:bg-primary-700'
+                : 'bg-dark-700 text-gray-500 cursor-not-allowed'
+            }`}
           >
             <Plus size={20} />
             Novo Lançamento
           </button>
-          <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+          <button 
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+          >
             <Upload size={20} />
             Upload
           </button>
@@ -257,6 +270,7 @@ const CustomerTransactions: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveTransaction}
+        selectedCompanyId={selectedCompanyId}
       />
 
       {selectedTransaction && (
