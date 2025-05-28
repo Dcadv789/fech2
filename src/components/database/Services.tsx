@@ -1,19 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
 import { Service } from '../../types/service';
 import { serviceService } from '../../services/serviceService';
 import ServiceList from './ServiceList';
 import ServiceModal from './ServiceModal';
 
-interface Company {
-  id: string;
-  razao_social: string;
-}
-
 const Services: React.FC = () => {
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
-  const [companies, setCompanies] = useState<Company[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,55 +15,27 @@ const Services: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadInitialData();
+    loadServices();
   }, []);
 
   useEffect(() => {
     filterServices();
-  }, [services, selectedCompanyId, searchTerm, activeFilter]);
+  }, [services, searchTerm, activeFilter]);
 
-  const loadInitialData = async () => {
+  const loadServices = async () => {
     try {
       setIsLoading(true);
-      const [companiesData, servicesData] = await Promise.all([
-        loadCompanies(),
-        loadServices()
-      ]);
-
-      setCompanies(companiesData || []);
-      setServices(servicesData || []);
-
-      if (companiesData.length > 0) {
-        setSelectedCompanyId(companiesData[0].id);
-      }
+      const data = await serviceService.getServices();
+      setServices(data);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('Erro ao carregar serviços:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loadCompanies = async () => {
-    const { data, error } = await supabase
-      .from('empresas')
-      .select('id, razao_social')
-      .order('razao_social');
-
-    if (error) throw error;
-    return data;
-  };
-
-  const loadServices = async () => {
-    const data = await serviceService.getServices();
-    return data;
-  };
-
   const filterServices = () => {
-    let filtered = services;
-
-    if (selectedCompanyId) {
-      filtered = filtered.filter(service => service.empresa_id === selectedCompanyId);
-    }
+    let filtered = [...services];
 
     if (activeFilter !== 'all') {
       filtered = filtered.filter(service => 
@@ -134,8 +98,7 @@ const Services: React.FC = () => {
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          disabled={!selectedCompanyId}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
         >
           <Plus size={20} />
           Novo Serviço
@@ -154,19 +117,6 @@ const Services: React.FC = () => {
             />
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
-
-          <select
-            value={selectedCompanyId}
-            onChange={(e) => setSelectedCompanyId(e.target.value)}
-            className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-primary-500"
-          >
-            <option value="">Todas as empresas</option>
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.razao_social}
-              </option>
-            ))}
-          </select>
 
           <div className="flex gap-2">
             <button
@@ -225,7 +175,6 @@ const Services: React.FC = () => {
           setSelectedService(null);
         }}
         onSave={handleSave}
-        selectedCompanyId={selectedCompanyId}
         service={selectedService}
       />
     </div>

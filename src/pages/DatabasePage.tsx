@@ -5,6 +5,7 @@ import Indicators from '../components/database/Indicators';
 import Transactions from '../components/database/Transactions';
 import CustomerTransactions from '../components/database/CustomerTransactions';
 import SalesRegistration from '../components/database/SalesRegistration';
+import Services from '../components/database/Services';
 import CompanySelect from '../components/database/CompanySelect';
 
 const DatabasePage: React.FC = () => {
@@ -22,6 +23,7 @@ const DatabasePage: React.FC = () => {
           <TabsTrigger value="lancamentos">Lançamentos</TabsTrigger>
           <TabsTrigger value="lancamentos-clientes">Lanç. Clientes</TabsTrigger>
           <TabsTrigger value="registro-vendas">Registro de Vendas</TabsTrigger>
+          <TabsTrigger value="servicos">Serviços</TabsTrigger>
         </TabsList>
 
         <TabsContent value="categorias">
@@ -38,6 +40,9 @@ const DatabasePage: React.FC = () => {
         </TabsContent>
         <TabsContent value="registro-vendas">
           <SalesRegistration />
+        </TabsContent>
+        <TabsContent value="servicos">
+          <Services />
         </TabsContent>
       </Tabs>
     </div>

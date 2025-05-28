@@ -7,7 +7,6 @@ interface ServiceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
-  selectedCompanyId?: string;
   service?: Service | null;
 }
 
@@ -15,7 +14,6 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
   isOpen, 
   onClose, 
   onSave,
-  selectedCompanyId,
   service
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,11 +42,6 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!selectedCompanyId) {
-      setError('Selecione uma empresa');
-      return;
-    }
-
     setIsSubmitting(true);
     setError(null);
 
@@ -56,7 +49,6 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
       const formData = new FormData(e.currentTarget);
       
       const serviceData = {
-        empresa_id: selectedCompanyId,
         codigo: serviceCode,
         nome: formData.get('nome') as string,
         descricao: formData.get('descricao') as string || undefined,
