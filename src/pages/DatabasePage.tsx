@@ -4,6 +4,7 @@ import Categories from '../components/database/Categories';
 import Indicators from '../components/database/Indicators';
 import Transactions from '../components/database/Transactions';
 import CustomerTransactions from '../components/database/CustomerTransactions';
+import SalesRegistration from '../components/database/SalesRegistration';
 import CompanySelect from '../components/database/CompanySelect';
 
 const DatabasePage: React.FC = () => {
@@ -20,6 +21,7 @@ const DatabasePage: React.FC = () => {
           <TabsTrigger value="indicadores">Indicadores</TabsTrigger>
           <TabsTrigger value="lancamentos">Lançamentos</TabsTrigger>
           <TabsTrigger value="lancamentos-clientes">Lanç. Clientes</TabsTrigger>
+          <TabsTrigger value="registro-vendas">Registro de Vendas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="categorias">
@@ -34,9 +36,12 @@ const DatabasePage: React.FC = () => {
         <TabsContent value="lancamentos-clientes">
           <CustomerTransactions />
         </TabsContent>
+        <TabsContent value="registro-vendas">
+          <SalesRegistration />
+        </TabsContent>
       </Tabs>
     </div>
   );
 };
 
-export default DatabasePage
+export default DatabasePage;

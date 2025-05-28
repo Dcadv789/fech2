@@ -36,8 +36,8 @@ const SalesRegistration: React.FC = () => {
           *,
           empresa:empresas(razao_social),
           cliente:clientes(razao_social),
-          vendedor:pessoas(nome),
-          sdr:pessoas(nome),
+          vendedor:pessoas!registro_de_vendas_vendedor_id_fkey(nome),
+          sdr:pessoas!registro_de_vendas_sdr_id_fkey(nome),
           servico:servicos(nome)
         `)
         .eq('empresa_id', selectedCompanyId)
