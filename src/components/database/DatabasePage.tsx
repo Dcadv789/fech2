@@ -48,3 +48,5 @@ const DatabasePage: React.FC = () => {
     </div>
   );
 };
+
+export default DatabasePage;
