@@ -29,6 +29,7 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
   const [tabelaOrigem, setTabelaOrigem] = useState('indicador');
   const [ordem, setOrdem] = useState(widget?.ordem || 1);
   const [campoExibicao, setCampoExibicao] = useState('');
+  const [selecaoTipo, setSelecaoTipo] = useState<'alguns' | 'todos'>('alguns');
 
   useEffect(() => {
     if (isOpen) {
@@ -65,12 +66,14 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
         const firstComponent = data[0];
         setTabelaOrigem(firstComponent.tabela_origem);
         setCampoExibicao(firstComponent.campo_exibicao || '');
+        setSelecaoTipo(firstComponent.todos ? 'todos' : 'alguns');
         
-        const ids = data.map(comp => 
-          comp.indicador_id || comp.categoria_id
-        ).filter(Boolean);
-        
-        setSelectedItems(ids);
+        if (!firstComponent.todos) {
+          const ids = data.map(comp => 
+            comp.indicador_id || comp.categoria_id
+          ).filter(Boolean);
+          setSelectedItems(ids);
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar componentes:', error);
@@ -108,25 +111,27 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
         .eq('visualizacao_id', widget.id);
 
       // Inserir novos componentes
-      if (selectedItems.length > 0 || tabelaOrigem === 'registro_venda') {
-        let componentes = [];
-
-        if (tabelaOrigem === 'registro_venda') {
-          componentes.push({
+      if (selecaoTipo === 'todos') {
+        // Inserir um único componente com todos = true
+        await supabase
+          .from('config_visualizacoes_componentes')
+          .insert({
             visualizacao_id: widget.id,
             tabela_origem: tabelaOrigem,
-            campo_exibicao: campoExibicao,
+            todos: true,
             ordem: 1
           });
-        } else {
-          componentes = selectedItems.map((itemId, index) => ({
-            visualizacao_id: widget.id,
-            tabela_origem: tabelaOrigem,
-            indicador_id: tabelaOrigem === 'indicador' ? itemId : null,
-            categoria_id: tabelaOrigem === 'categoria' ? itemId : null,
-            ordem: index + 1
-          }));
-        }
+      } else if (selectedItems.length > 0) {
+        // Inserir componentes individuais
+        const componentes = selectedItems.map((itemId, index) => ({
+          visualizacao_id: widget.id,
+          tabela_origem: tabelaOrigem,
+          indicador_id: tabelaOrigem === 'indicador' ? itemId : null,
+          categoria_id: tabelaOrigem === 'categoria' ? itemId : null,
+          campo_exibicao: tabelaOrigem === 'registro_venda' ? campoExibicao : null,
+          ordem: index + 1,
+          todos: false
+        }));
 
         const { error: componentError } = await supabase
           .from('config_visualizacoes_componentes')
@@ -246,6 +251,7 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
                 setTabelaOrigem(e.target.value);
                 setSelectedItems([]);
                 setCampoExibicao('');
+                setSelecaoTipo('alguns');
               }}
               className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
             >
@@ -253,6 +259,27 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
               <option value="indicador">Indicadores</option>
               <option value="categoria">Categorias</option>
             </select>
+          </div>
+
+          <div className="flex items-center space-x-4 border border-dark-700 rounded-lg p-4">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="radio"
+                checked={selecaoTipo === 'alguns'}
+                onChange={() => setSelecaoTipo('alguns')}
+                className="form-radio text-primary-600"
+              />
+              <span className="text-white">Alguns</span>
+            </label>
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="radio"
+                checked={selecaoTipo === 'todos'}
+                onChange={() => setSelecaoTipo('todos')}
+                className="form-radio text-primary-600"
+              />
+              <span className="text-white">Todos</span>
+            </label>
           </div>
 
           {tabelaOrigem === 'registro_venda' ? (
@@ -274,7 +301,7 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
                 ))}
               </select>
             </div>
-          ) : (
+          ) : selecaoTipo === 'alguns' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Selecionar Itens *
