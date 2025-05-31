@@ -30,6 +30,7 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
   const [ordem, setOrdem] = useState(widget?.ordem || 1);
   const [campoExibicao, setCampoExibicao] = useState('');
   const [selecaoTipo, setSelecaoTipo] = useState<'alguns' | 'todos'>('alguns');
+  const [filtroCategoria, setFiltroCategoria] = useState<'Receita' | 'Despesa'>('Receita');
 
   useEffect(() => {
     if (isOpen) {
@@ -149,6 +150,27 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
     }
   };
 
+  const handleSelectAllByType = (tipo: 'Receita' | 'Despesa') => {
+    const categoriasByType = categories.filter(cat => cat.tipo === tipo);
+    const ids = categoriasByType.map(cat => cat.id);
+    setSelectedItems(prev => {
+      const otherTypeIds = prev.filter(id => {
+        const cat = categories.find(c => c.id === id);
+        return cat && cat.tipo !== tipo;
+      });
+      return [...otherTypeIds, ...ids];
+    });
+  };
+
+  const handleDeselectAllByType = (tipo: 'Receita' | 'Despesa') => {
+    setSelectedItems(prev => {
+      return prev.filter(id => {
+        const cat = categories.find(c => c.id === id);
+        return cat && cat.tipo !== tipo;
+      });
+    });
+  };
+
   if (!isOpen) return null;
 
   const camposRegistroVendas = [
@@ -159,6 +181,11 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
     { value: 'nome_cliente', label: 'Nome do Cliente' },
     { value: 'data_venda', label: 'Data da Venda' }
   ];
+
+  const categoriasPorTipo = {
+    Receita: categories.filter(cat => cat.tipo === 'Receita'),
+    Despesa: categories.filter(cat => cat.tipo === 'Despesa')
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -301,28 +328,121 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
                 ))}
               </select>
             </div>
-          ) : selecaoTipo === 'alguns' && (
+          ) : selecaoTipo === 'alguns' && tabelaOrigem === 'categoria' ? (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Selecionar Itens *
+                Selecionar Categorias *
               </label>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {(tabelaOrigem === 'indicador' ? indicators : categories).map((item) => (
-                  <label key={item.id} className="flex items-center space-x-2">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Coluna de Receitas */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-green-400">Receitas</h4>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectAllByType('Receita')}
+                        className="text-xs text-green-400 hover:text-green-300"
+                      >
+                        Marcar todos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeselectAllByType('Receita')}
+                        className="text-xs text-red-400 hover:text-red-300"
+                      >
+                        Desmarcar todos
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2 max-h-40 overflow-y-auto border border-dark-600 rounded-lg p-2">
+                    {categoriasPorTipo.Receita.map((categoria) => (
+                      <label key={categoria.id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.includes(categoria.id)}
+                          onChange={() => {
+                            setSelectedItems(prev => {
+                              if (prev.includes(categoria.id)) {
+                                return prev.filter(id => id !== categoria.id);
+                              }
+                              return [...prev, categoria.id];
+                            });
+                          }}
+                          className="form-checkbox h-4 w-4 text-primary-600"
+                        />
+                        <span className="text-white text-sm">{categoria.nome}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Coluna de Despesas */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-red-400">Despesas</h4>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectAllByType('Despesa')}
+                        className="text-xs text-green-400 hover:text-green-300"
+                      >
+                        Marcar todos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeselectAllByType('Despesa')}
+                        className="text-xs text-red-400 hover:text-red-300"
+                      >
+                        Desmarcar todos
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2 max-h-40 overflow-y-auto border border-dark-600 rounded-lg p-2">
+                    {categoriasPorTipo.Despesa.map((categoria) => (
+                      <label key={categoria.id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.includes(categoria.id)}
+                          onChange={() => {
+                            setSelectedItems(prev => {
+                              if (prev.includes(categoria.id)) {
+                                return prev.filter(id => id !== categoria.id);
+                              }
+                              return [...prev, categoria.id];
+                            });
+                          }}
+                          className="form-checkbox h-4 w-4 text-primary-600"
+                        />
+                        <span className="text-white text-sm">{categoria.nome}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : selecaoTipo === 'alguns' && tabelaOrigem === 'indicador' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Selecionar Indicadores *
+              </label>
+              <div className="space-y-2 max-h-40 overflow-y-auto border border-dark-600 rounded-lg p-2">
+                {indicators.map((indicador) => (
+                  <label key={indicador.id} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      checked={selectedItems.includes(item.id)}
+                      checked={selectedItems.includes(indicador.id)}
                       onChange={() => {
                         setSelectedItems(prev => {
-                          if (prev.includes(item.id)) {
-                            return prev.filter(id => id !== item.id);
+                          if (prev.includes(indicador.id)) {
+                            return prev.filter(id => id !== indicador.id);
                           }
-                          return [...prev, item.id];
+                          return [...prev, indicador.id];
                         });
                       }}
                       className="form-checkbox h-4 w-4 text-primary-600"
                     />
-                    <span className="text-white">{item.nome}</span>
+                    <span className="text-white text-sm">{indicador.nome}</span>
                   </label>
                 ))}
               </div>
