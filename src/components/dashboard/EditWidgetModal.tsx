@@ -5,6 +5,7 @@ import { categoryService } from '../../services/categoryService';
 import { indicatorService } from '../../services/indicatorService';
 import { Category } from '../../types/category';
 import { Indicator } from '../../types/indicator';
+import { Client } from '../../types/client';
 
 interface EditWidgetModalProps {
   isOpen: boolean;
@@ -23,7 +24,9 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [indicators, setIndicators] = useState<Indicator[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [tipoVisualizacao, setTipoVisualizacao] = useState(widget?.tipo_visualizacao || 'card');
   const [tipoGrafico, setTipoGrafico] = useState(widget?.tipo_grafico || 'bar');
   const [tabelaOrigem, setTabelaOrigem] = useState('indicador');
@@ -31,6 +34,7 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
   const [campoExibicao, setCampoExibicao] = useState('');
   const [selecaoTipo, setSelecaoTipo] = useState<'alguns' | 'todos'>('alguns');
   const [filtroCategoria, setFiltroCategoria] = useState<'Receita' | 'Despesa'>('Receita');
+  const [selectAllClients, setSelectAllClients] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -41,16 +45,34 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
 
   const loadData = async () => {
     try {
-      const [categoriesData, indicatorsData] = await Promise.all([
+      const [categoriesData, indicatorsData, clientsData] = await Promise.all([
         categoryService.getCategories(),
-        indicatorService.getIndicators()
+        indicatorService.getIndicators(),
+        loadClients()
       ]);
 
       setCategories(categoriesData);
       setIndicators(indicatorsData);
+      setClients(clientsData || []);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       setError('Erro ao carregar dados. Tente novamente.');
+    }
+  };
+
+  const loadClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('*')
+        .eq('ativo', true)
+        .order('razao_social');
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Erro ao carregar clientes:', error);
+      return [];
     }
   };
 
@@ -70,10 +92,24 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
         setSelecaoTipo(firstComponent.todos ? 'todos' : 'alguns');
         
         if (!firstComponent.todos) {
-          const ids = data.map(comp => 
-            comp.indicador_id || comp.categoria_id
-          ).filter(Boolean);
-          setSelectedItems(ids);
+          // Separar IDs de categorias/indicadores dos IDs de clientes
+          const categoryIndicatorIds = data
+            .filter(comp => comp.indicador_id || comp.categoria_id)
+            .map(comp => comp.indicador_id || comp.categoria_id)
+            .filter(Boolean);
+          
+          const clientIds = data
+            .filter(comp => comp.cliente_id)
+            .map(comp => comp.cliente_id)
+            .filter(Boolean);
+          
+          setSelectedItems(categoryIndicatorIds);
+          setSelectedClients(clientIds);
+          
+          // Se todos os clientes estiverem selecionados, marcar a opção "selecionar todos"
+          if (clientIds.length > 0 && clients.length > 0 && clientIds.length === clients.length) {
+            setSelectAllClients(true);
+          }
         }
       }
     } catch (error) {
@@ -122,23 +158,52 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
             todos: true,
             ordem: 1
           });
-      } else if (selectedItems.length > 0) {
-        // Inserir componentes individuais
-        const componentes = selectedItems.map((itemId, index) => ({
-          visualizacao_id: widget.id,
-          tabela_origem: tabelaOrigem,
-          indicador_id: tabelaOrigem === 'indicador' ? itemId : null,
-          categoria_id: tabelaOrigem === 'categoria' ? itemId : null,
-          campo_exibicao: tabelaOrigem === 'registro_venda' ? campoExibicao : null,
-          ordem: index + 1,
-          todos: false
-        }));
+      } else {
+        let componentes = [];
+        
+        // Adicionar componentes de categoria ou indicador
+        if (tabelaOrigem !== 'registro_venda' && selectedItems.length > 0) {
+          componentes = selectedItems.map((itemId, index) => ({
+            visualizacao_id: widget.id,
+            tabela_origem: tabelaOrigem,
+            indicador_id: tabelaOrigem === 'indicador' ? itemId : null,
+            categoria_id: tabelaOrigem === 'categoria' ? itemId : null,
+            campo_exibicao: null,
+            ordem: index + 1,
+            todos: false
+          }));
+        } 
+        // Adicionar componentes de registro de venda
+        else if (tabelaOrigem === 'registro_venda') {
+          if (campoExibicao === 'cliente_id' && selectedClients.length > 0) {
+            // Para clientes, criar um componente para cada cliente selecionado
+            componentes = selectedClients.map((clientId, index) => ({
+              visualizacao_id: widget.id,
+              tabela_origem: tabelaOrigem,
+              campo_exibicao: campoExibicao,
+              cliente_id: clientId,
+              ordem: index + 1,
+              todos: false
+            }));
+          } else {
+            // Para outros campos, criar um único componente
+            componentes = [{
+              visualizacao_id: widget.id,
+              tabela_origem: tabelaOrigem,
+              campo_exibicao: campoExibicao,
+              ordem: 1,
+              todos: false
+            }];
+          }
+        }
 
-        const { error: componentError } = await supabase
-          .from('config_visualizacoes_componentes')
-          .insert(componentes);
+        if (componentes.length > 0) {
+          const { error: componentError } = await supabase
+            .from('config_visualizacoes_componentes')
+            .insert(componentes);
 
-        if (componentError) throw componentError;
+          if (componentError) throw componentError;
+        }
       }
 
       onSave();
@@ -171,6 +236,38 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
     });
   };
 
+  const handleToggleSelectAllClients = () => {
+    const newSelectAllState = !selectAllClients;
+    setSelectAllClients(newSelectAllState);
+    
+    if (newSelectAllState) {
+      // Selecionar todos os clientes
+      setSelectedClients(clients.map(client => client.id));
+    } else {
+      // Desmarcar todos os clientes
+      setSelectedClients([]);
+    }
+  };
+
+  const handleToggleClient = (clientId: string) => {
+    setSelectedClients(prev => {
+      if (prev.includes(clientId)) {
+        // Se o cliente já está selecionado, remova-o
+        const newSelection = prev.filter(id => id !== clientId);
+        setSelectAllClients(false);
+        return newSelection;
+      } else {
+        // Se o cliente não está selecionado, adicione-o
+        const newSelection = [...prev, clientId];
+        // Verifique se todos os clientes estão selecionados
+        if (newSelection.length === clients.length) {
+          setSelectAllClients(true);
+        }
+        return newSelection;
+      }
+    });
+  };
+
   if (!isOpen) return null;
 
   const camposRegistroVendas = [
@@ -178,6 +275,7 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
     { value: 'sdr_id', label: 'SDR' },
     { value: 'servico_id', label: 'Serviço' },
     { value: 'origem', label: 'Origem' },
+    { value: 'cliente_id', label: 'Cliente' },
     { value: 'nome_cliente', label: 'Nome do Cliente' },
     { value: 'data_venda', label: 'Data da Venda' }
   ];
@@ -189,8 +287,8 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-dark-800 rounded-xl w-full max-w-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-dark-700">
+      <div className="bg-dark-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-auto">
+        <div className="flex items-center justify-between p-6 border-b border-dark-700 sticky top-0 bg-dark-800 z-10">
           <h2 className="text-xl font-bold text-white">Editar Widget</h2>
           <button
             onClick={onClose}
@@ -277,8 +375,10 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
               onChange={(e) => {
                 setTabelaOrigem(e.target.value);
                 setSelectedItems([]);
+                setSelectedClients([]);
                 setCampoExibicao('');
                 setSelecaoTipo('alguns');
+                setSelectAllClients(false);
               }}
               className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
             >
@@ -309,7 +409,7 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
             </label>
           </div>
 
-          {tabelaOrigem === 'registro_venda' ? (
+          {tabelaOrigem === 'registro_venda' && selecaoTipo === 'alguns' ? (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Campo para Exibição *
@@ -327,6 +427,53 @@ const EditWidgetModal: React.FC<EditWidgetModalProps> = ({
                   </option>
                 ))}
               </select>
+              
+              {/* Exibir seleção de clientes quando o campo cliente_id for selecionado */}
+              {campoExibicao === 'cliente_id' && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-300">
+                      Selecionar Clientes ({selectedClients.length} selecionados)
+                    </label>
+                    <div>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectAllClients}
+                          onChange={handleToggleSelectAllClients}
+                          className="mr-2 form-checkbox h-4 w-4 text-primary-600"
+                        />
+                        <span className="text-sm text-gray-300">Selecionar todos</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto border border-dark-600 rounded-lg p-2">
+                    {clients.length === 0 ? (
+                      <p className="text-center text-gray-400 py-2">Nenhum cliente encontrado</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {clients.map((client) => (
+                          <label key={client.id} className="flex items-center space-x-2 p-2 hover:bg-dark-700 rounded-lg cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedClients.includes(client.id)}
+                              onChange={() => handleToggleClient(client.id)}
+                              className="form-checkbox h-4 w-4 text-primary-600"
+                            />
+                            <div className="flex-1">
+                              <p className="text-sm text-white">{client.razao_social}</p>
+                              {client.nome_fantasia && (
+                                <p className="text-xs text-gray-400">{client.nome_fantasia}</p>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-400">{client.codigo}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ) : selecaoTipo === 'alguns' && tabelaOrigem === 'categoria' ? (
             <div>
