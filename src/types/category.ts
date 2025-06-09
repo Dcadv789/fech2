@@ -20,7 +20,8 @@ export interface Category {
   descricao: string | null;
   tipo: 'Receita' | 'Despesa';
   ativo: boolean;
-  grupo_id: string;
+  grupo_id: string | null;
+  grupo: CategoryGroup | null;
   criado_em: string;
   modificado_em: string;
 }
@@ -30,6 +31,6 @@ export interface CreateCategoryDTO {
   nome: string;
   descricao?: string;
   tipo: 'Receita' | 'Despesa';
-  grupo_id: string;
+  grupo_id: string | null;
   ativo?: boolean;
 }

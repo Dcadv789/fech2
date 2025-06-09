@@ -7,6 +7,7 @@ interface CategoryListProps {
   onEdit: (category: Category) => void;
   onDelete: (id: string) => void;
   onDeleteGroup: (id: string) => void;
+  onEditGroup: (group: CategoryGroup) => void;
   onViewDetails: (category: Category) => void;
   onManageCompanies: (category: Category) => void;
   onToggleActive: (category: Category) => void;
@@ -16,6 +17,7 @@ interface GroupedCategories {
   [key: string]: {
     group: CategoryGroup;
     categories: Category[];
+    isDefaultGroup?: boolean;
   };
 }
 
@@ -24,6 +26,7 @@ const CategoryList: React.FC<CategoryListProps> = ({
   onEdit,
   onDelete,
   onDeleteGroup,
+  onEditGroup,
   onViewDetails,
   onManageCompanies,
   onToggleActive
@@ -49,12 +52,30 @@ const CategoryList: React.FC<CategoryListProps> = ({
   }
 
   const groupedCategories = categories.reduce<GroupedCategories>((acc, category) => {
-    const groupId = category.grupo_id;
+    const groupId = category.grupo_id || 'sem-grupo';
+    
     if (!acc[groupId]) {
-      acc[groupId] = {
-        group: category.grupo as CategoryGroup,
-        categories: []
-      };
+      if (category.grupo) {
+        acc[groupId] = {
+          group: category.grupo,
+          categories: [],
+          isDefaultGroup: false
+        };
+      } else {
+        // Create a default group for categories without a group
+        acc[groupId] = {
+          group: {
+            id: 'sem-grupo',
+            nome: 'Categorias Sem Grupo',
+            descricao: 'Categorias que não foram associadas a nenhum grupo',
+            ativo: true,
+            criado_em: new Date().toISOString(),
+            modificado_em: new Date().toISOString()
+          },
+          categories: [],
+          isDefaultGroup: true
+        };
+      }
     }
     acc[groupId].categories.push(category);
     return acc;
@@ -62,7 +83,7 @@ const CategoryList: React.FC<CategoryListProps> = ({
 
   return (
     <div className="space-y-4">
-      {Object.entries(groupedCategories).map(([groupId, { group, categories }]) => (
+      {Object.entries(groupedCategories).map(([groupId, { group, categories, isDefaultGroup }]) => (
         <div key={groupId} className="bg-dark-800/50 rounded-lg border border-dark-700">
           <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-dark-700/50"
                onClick={() => toggleGroup(groupId)}>
@@ -76,24 +97,28 @@ const CategoryList: React.FC<CategoryListProps> = ({
               <span className="text-sm text-gray-400">({categories.length})</span>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit({ ...group, id: groupId } as any);
-                }}
-                className="p-2 text-primary-400 hover:text-primary-300 hover:bg-dark-700 rounded transition-colors"
-              >
-                <Pencil size={16} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteGroup(groupId);
-                }}
-                className="p-2 text-red-400 hover:text-red-300 hover:bg-dark-700 rounded transition-colors"
-              >
-                <Trash2 size={16} />
-              </button>
+              {!isDefaultGroup && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditGroup(group);
+                    }}
+                    className="p-2 text-primary-400 hover:text-primary-300 hover:bg-dark-700 rounded transition-colors"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteGroup(groupId);
+                    }}
+                    className="p-2 text-red-400 hover:text-red-300 hover:bg-dark-700 rounded transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </>
+              )}
             </div>
           </div>
 

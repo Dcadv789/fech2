@@ -23,12 +23,24 @@ export const categoryService = {
     return data;
   },
 
+  async updateCategoryGroup(id: string, group: CreateCategoryGroupDTO): Promise<CategoryGroup> {
+    const { data, error } = await supabase
+      .from('categorias_grupo')
+      .update(group)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   async getCategories(): Promise<Category[]> {
     const { data, error } = await supabase
       .from('categorias')
       .select(`
         *,
-        grupo:categorias_grupo(id, nome)
+        grupo:categorias_grupo(id, nome, descricao, ativo, criado_em, modificado_em)
       `)
       .order('grupo_id, codigo');
 

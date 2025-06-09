@@ -6,7 +6,7 @@ import CategoryList from './CategoryList';
 import CategoryDetailsModal from './CategoryDetailsModal';
 import CategoryCompaniesModal from './CategoryCompaniesModal';
 import BulkLinkModal from './BulkLinkModal';
-import { Category } from '../../types/category';
+import { Category, CategoryGroup } from '../../types/category';
 import { categoryService } from '../../services/categoryService';
 
 interface CategoriesProps {
@@ -24,6 +24,7 @@ const Categories: React.FC<CategoriesProps> = ({ selectedCompanyId }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<CategoryGroup | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -83,6 +84,7 @@ const Categories: React.FC<CategoriesProps> = ({ selectedCompanyId }) => {
 
   const handleSaveGroup = () => {
     setIsGroupModalOpen(false);
+    setSelectedGroup(null);
     loadCategories();
   };
 
@@ -130,6 +132,11 @@ const Categories: React.FC<CategoriesProps> = ({ selectedCompanyId }) => {
   const handleEdit = (category: Category) => {
     setSelectedCategory(category);
     setIsCategoryModalOpen(true);
+  };
+
+  const handleEditGroup = (group: CategoryGroup) => {
+    setSelectedGroup(group);
+    setIsGroupModalOpen(true);
   };
 
   return (
@@ -266,6 +273,7 @@ const Categories: React.FC<CategoriesProps> = ({ selectedCompanyId }) => {
             onEdit={handleEdit}
             onDelete={handleDeleteCategory}
             onDeleteGroup={handleDeleteGroup}
+            onEditGroup={handleEditGroup}
             onViewDetails={handleViewDetails}
             onManageCompanies={handleManageCompanies}
             onToggleActive={handleToggleActive}
@@ -285,8 +293,12 @@ const Categories: React.FC<CategoriesProps> = ({ selectedCompanyId }) => {
 
       <CategoryGroupModal
         isOpen={isGroupModalOpen}
-        onClose={() => setIsGroupModalOpen(false)}
+        onClose={() => {
+          setIsGroupModalOpen(false);
+          setSelectedGroup(null);
+        }}
         onSave={handleSaveGroup}
+        group={selectedGroup}
       />
 
       {selectedCategory && (

@@ -1,17 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { categoryService } from '../../services/categoryService';
-import { CreateCategoryGroupDTO } from '../../types/category';
+import { CreateCategoryGroupDTO, CategoryGroup } from '../../types/category';
 
 interface CategoryGroupModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
+  group?: CategoryGroup | null;
 }
 
-const CategoryGroupModal: React.FC<CategoryGroupModalProps> = ({ isOpen, onClose, onSave }) => {
+const CategoryGroupModal: React.FC<CategoryGroupModalProps> = ({ isOpen, onClose, onSave, group }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    nome: '',
+    descricao: ''
+  });
+
+  useEffect(() => {
+    if (group) {
+      setFormData({
+        nome: group.nome,
+        descricao: group.descricao || ''
+      });
+    } else {
+      setFormData({
+        nome: '',
+        descricao: ''
+      });
+    }
+  }, [group]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -19,14 +38,18 @@ const CategoryGroupModal: React.FC<CategoryGroupModalProps> = ({ isOpen, onClose
     setError(null);
 
     try {
-      const formData = new FormData(e.currentTarget);
       const groupData: CreateCategoryGroupDTO = {
-        nome: formData.get('nome') as string,
-        descricao: formData.get('descricao') as string || undefined,
+        nome: formData.nome,
+        descricao: formData.descricao || undefined,
         ativo: true
       };
 
-      await categoryService.createCategoryGroup(groupData);
+      if (group) {
+        await categoryService.updateCategoryGroup(group.id, groupData);
+      } else {
+        await categoryService.createCategoryGroup(groupData);
+      }
+      
       onSave();
     } catch (error) {
       console.error('Erro ao salvar grupo:', error);
@@ -36,13 +59,23 @@ const CategoryGroupModal: React.FC<CategoryGroupModalProps> = ({ isOpen, onClose
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-dark-800 rounded-xl w-full max-w-md">
         <div className="flex items-center justify-between p-6 border-b border-dark-700">
-          <h2 className="text-xl font-bold text-white">Novo Grupo</h2>
+          <h2 className="text-xl font-bold text-white">
+            {group ? 'Editar Grupo' : 'Novo Grupo'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
@@ -65,6 +98,8 @@ const CategoryGroupModal: React.FC<CategoryGroupModalProps> = ({ isOpen, onClose
             <input
               type="text"
               name="nome"
+              value={formData.nome}
+              onChange={handleInputChange}
               required
               className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
             />
@@ -76,6 +111,8 @@ const CategoryGroupModal: React.FC<CategoryGroupModalProps> = ({ isOpen, onClose
             </label>
             <textarea
               name="descricao"
+              value={formData.descricao}
+              onChange={handleInputChange}
               rows={3}
               className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
             />
